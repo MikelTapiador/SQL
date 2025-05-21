@@ -49,7 +49,7 @@ FROM film f ;
 
 --10.Encuentra la mayor y menor duración de una película de nuestra BBDD
 
-SELECT MAX(length ), MIN(length ),
+SELECT MAX(length ), MIN(length )
 FROM film f ;
 
 --11. Encuentra lo que costó el antepenúltimo alquiler ordenado por día
@@ -59,8 +59,9 @@ FROM payment p
 ORDER BY p.payment_date desc
 LIMIT 1 
 OFFSET 2;
---No me da el resultado número 3 de la columna payment day cuando lo busco sin limit ni offset, pero creo que es por que todas coinciden en la fecha y la hora exactas. 
---Lo dejo así por que creo que está bien formulado.
+--No entiendo la correccion que me habeis hecho en este punto, en la tabla rental no existe amount, por lo tanto no puedo saber cuanto costó el antepenultimo alquiler. 
+-- Rental ID pertenece a ambas tablas, por lo tanto la fecha es la misma y para saber el amount necesito la tabla payment.
+
 
 --12. Encuentra el título de las películas en la tabla “filmˮ que no sean ni ‘NC-17ʼ ni ‘Gʼ en cuanto a su clasificación
 
@@ -101,14 +102,17 @@ SELECT first_name , last_name , title
 FROM actor a 
 JOIN film_actor fa ON a.actor_id = fa.actor_id
 JOIN film f ON fa.film_id = f.film_id
-WHERE f.title = 'EGG IGBY'
+WHERE f.title = 'EGG IGBY';
+
+-- Corrijo el punto y coma pero dejo EGG IGBY en mayúsculas, es como recogido en la base de datos.
 
 --18. Selecciona todos los nombres de las películas únicos.
 
-SELECT DISTINCT title , film_id 
+SELECT DISTINCT title 
 FROM film f 
-ORDER BY f.title 
+ORDER BY f.title ;
 --Creo que no he entendido bien lo que se pedía en este ejercicio. Todas las peliculas son unicas, así que no se si era esto lo que se pedía.
+-- Corrijo el ejercicio y solo busco title, sin film_id
 
 
 --19.Encuentra el título de las películas que son comedias y tienen una duración mayor a 180 minutos en la tabla “filmˮ
@@ -143,10 +147,12 @@ FROM actor a ;
 
 --23.Números de alquiler por día, ordenados por cantidad de alquiler de forma descendente.
 
-SELECT rental_date , COUNT(*) 
+SELECT DATE(rental_date) , COUNT(*) 
 FROM rental 
 GROUP BY rental_date 
 ORDER BY count(*) DESC;
+
+-- Corregido, ahora solo aparece la fecha
 
 --24. Encuentra las películas con una duración superior al promedio
 
@@ -161,7 +167,12 @@ WHERE length > (SELECT AVG(length )
 
 --25. Averigua el número de alquileres registrados por mes
 
---No tengo ni idea de trabajar con fechas
+SELECT EXTRACT (MONTH FROM rental_date), count(*)
+FROM rental r 
+GROUP BY EXTRACT (MONTH FROM rental_date)
+ORDER BY EXTRACT (MONTH FROM rental_date)
+
+-- Creo que así queda solucionada la corrección.
 
 --26.Encuentra el promedio, la desviación estándar y varianza del total pagado
 
@@ -174,13 +185,18 @@ FROM payment p ;
 SELECT AVG(amount )
 FROM payment p 
 
-SELECT f.film_id , title , amount 
+SELECT f.film_id , title 
 FROM film f 
 JOIN inventory i ON i.film_id = f.film_id
 JOIN rental r ON r.inventory_id = i.inventory_id
 JOIN payment p ON p.rental_id = r.rental_id
 WHERE amount > (SELECT AVG(amount )
-				FROM payment p );
+				FROM payment p )
+GROUP BY f.film_id 
+ORDER BY f.film_id ;
+
+--Creo que así queda corregido el ejercicio.
+
 
 --28.Muestra el id de los actores que hayan participado en más de 40 películas
 
@@ -190,7 +206,7 @@ FROM film_actor fa
 GROUP BY actor_id 
 HAVING COUNT(film_id) > 40
 
---29.Obtener todas las películas y, si están disponibles en el inventario, mostrar la cantidad disponible
+--29.Obtener todas las peliculas  y, si están disponibles en el inventario, mostrar la cantidad disponible
 
 SELECT f.film_id , f.title, count(inventory_id ) AS cantidad_disponible
 FROM inventory i2  
@@ -481,22 +497,34 @@ WHERE a.actor_id NOT IN (SELECT a.actor_id
 						WHERE "name" = 'Music')
 ORDER BY last_name ;
 
-
-SELECT *
+SELECT DISTINCT  first_name AS nombre, last_name AS apellido
 FROM actor a 
 JOIN film_actor fa ON fa.actor_id = a.actor_id
 JOIN film f ON f.film_id = fa.film_id
 JOIN film_category fc ON fc.film_id = f.film_id
 JOIN category c ON c.category_id = fc.category_id
-WHERE "name" = 'Music'
-ORDER BY a.last_name 
+WHERE a.actor_id NOT IN (SELECT a.actor_id 
+						FROM film_actor fa2 
+						JOIN film f ON f.film_id = fa.film_id
+						JOIN film_category fc ON fc.film_id = f.film_id
+						JOIN category c ON c.category_id = fc.category_id
+						WHERE "name" = 'Music')
+ORDER BY last_name ;
+
+--La primera versión es la que había hecho yo, y la segunda es un poco simplificada como me pedías. No se como puedo simplificarlo más si tengo que llegar a la 
+-- categoría music desde actor. Además las distintas opciones arrojan resultados distintos, no se como simplificarlo más.
+
 
 --57. Encuentra el título de todas las películas que fueron alquiladas por más de 8 días.
 
 
-SELECT title 
-FROM film f 
-WHERE rental_duration > 8;
+SELECT DISTINCT title
+FROM rental r 
+JOIN inventory i ON i.inventory_id = r.inventory_id
+JOIN film f ON f.film_id = i.film_id
+WHERE return_date ::date > rental_date ::date + 8
+
+-- Sinceramente he tenido que buscar en chatGPT como hacer esto, espero que así este bien.
 
 --58. Encuentra el título de todas las películas que son de la misma categoría que ‘Animationʼ
 
@@ -524,10 +552,12 @@ WHERE length = (SELECT length
 SELECT concat(first_name , ' ', c.last_name ), count(DISTINCT rental_id  ), last_name 
 FROM customer c 
 JOIN rental r ON r.customer_id = c.customer_id
-JOIN inventory i ON r.inventory_id = r.inventory_id
+JOIN inventory i ON r.inventory_id = i.inventory_id
 GROUP BY concat(first_name , ' ', c.last_name ), last_name 
 HAVING count(DISTINCT rental_id )>=7
 ORDER BY last_name ;
+
+-- Error corregido
 
 --Tengo dudas en esta entiendo que cada rental_Id es una pelicula distinta, pero se podría volver a alquilar la misma y en esa caso 
 --no se si tendría un rental ID distinto.
@@ -579,3 +609,4 @@ FROM customer c
 JOIN rental r ON r.customer_id = c.customer_id
 GROUP BY c.customer_id 
 ORDER BY nombre_cliente ;
+

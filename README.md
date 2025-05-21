@@ -7,3 +7,6 @@ Los objetivos del siguiente proyecto son demostrar las habilidades adquiridas du
 ### Proceso
 
 El proceso ha sido relativamente sencillo, espero haber hecho uso de buenas prácticas y haber resuelto los problemas de la forma adecuada. Hacia el final quizá se hayan complicado un poco más los ejercicios pero con paciencia y desglosando los problemas en otros más pequeños he podido ir resolviéndolos. 
+### Corrección
+
+Creo haber corregido todo lo que se me pedía, pero tengo dudas con el ejercicio 27, no se si he hecho lo que me pedías.
